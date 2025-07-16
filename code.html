@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CODEXBOT</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ffffff">
+
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding-bottom: 100px;
+      color: #111;
+    }
+
+    h3 {
+      margin-top: 0;
+    }
+
+    input, textarea, button {
+      width: 100%;
+      margin: 8px 0;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+
+    button {
+      background: #222;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #000;
+    }
+
+    .box {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      max-width: 600px;
+      margin: 20px auto;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .output {
+      white-space: pre-wrap;
+      background: #eee;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 10px;
+      color: #000;
+    }
+
+    .btn-list { background: #8e24aa; }
+    .btn-save { background: #2e7d32; }
+    .btn-show { background: #1565c0; }
+    .btn-copy { background: #f57c00; }
+    .btn-confirm { background: #00897b; }
+    .btn-mono { background: #00acc1; }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-around;
+      background: #111;
+      padding: 10px 0;
+      z-index: 999;
+    }
+
+    .bottom-nav button {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .popup, #userListPopup, #bottomLinkPopup {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    .popup-content {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      position: relative;
+      color: #000;
+    }
+
+    .popup-content span {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    #toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: black;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 10px;
+      display: none;
+      z-index: 9999;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    #monoInput, #monoResult, #copyMono,
+    #historyOutput {
+      margin-top: 10px;
+    }
+
+    .output-section {
+      margin-top: 20px;
+    }
+
+    .tools-btn {
+      position: fixed;
+      top: 50%;
+      right: 20px;
+      transform: translateY(-50%);
+      z-index: 9999;
+    }
+
+    .tools-btn button {
+      background: #00897b;
+      color: white;
+    }
+
+body.dark {
+  background: #111;
+  color: #eee;
+}
+
+body.dark .box,
+body.dark .popup-content {
+  background: #222;
+  color: #eee;
+}
+
+body.dark .output {
+  background: #333;
+  color: #eee;
+}
+
+body.dark input,
+body.dark textarea {
+  background: #222;
+  color: #eee;
+  border: 1px solid #555;
+}
+
+body.dark button {
+  background: #333;
+  color: white;
+}
+
+body.dark .bottom-nav {
+  background: #000;
+}
+  </style>
+</head>
+<body>
+
+
+<div style="position: fixed; top: 15px; left: 15px; z-index: 10000;">
+  <button onclick="toggleDarkMode()" style="padding: 10px; border-radius: 10px;">🌓</button>
+</div>
+
+<div class="box" id="toolSection">
+  <h2>WELLCOME TO CODEXBOT</h2>
+
+  <div id="codeSection">
+    <input type="text" id="codeInput" placeholder="CODE" oninput="autoFocusNumber()" />
+    <input type="number" id="numberInput" placeholder="NUMBER" />
+    <button onclick="insertCode()" class="btn-save">💾 Save Code</button>
+
+    <button onclick="showEditPopup()">✏️ Edit</button>
+  </div>
+
+  <!-- 🟦 CC Button under Save/Edit -->
+<button onclick="window.location.href='amit.html'" style="
+  margin-top: 10px;
+  margin-left: 10px;
+  width: 45px;
+  height: 45px;
+  background: #0a84ff;
+  color: #fff;
+  font-weight: bold;
+  font-size: 0.95em;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  cursor: pointer;">
+  CC
+</button>
+
+  <div class="output-section" id="outputSection">
+    <div id="result" class="output">No data.</div>
+    <button id="copyBtn" class="btn-copy" onclick="copyResult()">📋 Copy</button>
+    <button id="saveHistoryBtn" class="btn-save" onclick="saveUpdatedListToHistory()">💾 Save List</button>
+  </div>
+
+  <textarea id="monoInput" rows="6" placeholder="🔤 Paste mono list (codes)..." style="display:none;"></textarea>
+  <button id="monoRunBtn" onclick="runMono()" class="btn-mono" style="display:none;">⚙️ Convert Mono</button>
+  <div id="monoResult" class="output" style="display:none;"></div>
+  <button id="copyMono" class="btn-copy" onclick="copyMonoResult()" style="display:none;">📋 Copy Mono</button>
+
+  <div id="historyOutput" class="output" style="display:none;"></div>
+</div>
+
+<!-- Bottom Navigation -->
+<div class="bottom-nav">
+  <button onclick="toggleSection('home')">🏠 Home</button>
+  <button onclick="toggleSection('list')">📋 List</button>
+  <button onclick="showUserListPopup()">👥 Userlist</button>
+  <button onclick="toggleSection('mono')">💠 Mono</button>
+  <button onclick="toggleSection('history')">🕘 History</button>
+</div>
+
+<!-- Popups -->
+
+<div id="editPopup" class="popup" onclick="hideEditPopup(event)">
+  <div class="popup-content" onclick="event.stopPropagation()" style="display:flex; flex-direction:column; gap:10px; width:90%; max-width:400px;">
+    <span onclick="hideEditPopup()" style="align-self: flex-end;">❌</span>
+    <h3 style="text-align:center;">✏️ Edit Serial Line</h3>
+    <input type="number" id="botInput" placeholder="🔢 Serial No." inputmode="numeric" />
+    <input type="text" id="codeEditInput" placeholder="🧾 Code (8–9 chars)" maxlength="9" />
+    <input type="number" id="userInput" placeholder="👤 User" />
+    <button onclick="submitEdit()" class="btn-confirm">✅ Update</button>
+  </div>
+</div>
+
+<div class="popup" id="listPopup">
+  <div class="popup-content">
+    <span onclick="document.getElementById('listPopup').style.display='none'">❌</span>
+    <h3>📋 Enter Date & List</h3>
+    <input type="text" id="popupDateInput" placeholder="🗓 Date (e.g. 15 June)" />
+    <textarea id="popupListInput" rows="6" placeholder="📄 Paste your list..."></textarea>
+    <button onclick="submitListPopup()" class="btn-confirm">💾 Save</button>
+  </div>
+</div>
+
+<div id="userListPopup" class="popup" onclick="hideUserListPopup(event)">
+  <div class="popup-content" onclick="event.stopPropagation()">
+    <span onclick="document.getElementById('userListPopup').style.display='none'">❌</span>
+    <h3>👥 Userlist</h3>
+    <div id="userListContent" style="max-height:400px; overflow:auto; background:#000; padding:10px; border-radius:8px; white-space:pre-wrap; color:#fff;"></div>
+    <button onclick="copyUserList()" class="btn-copy" style="margin-top:10px; width:100%;">📋 Copy</button>
+  </div>
+</div>
+
+<div id="bottomLinkPopup" class="popup" onclick="hideBottomPopup(event)">
+  <div class="popup-content" onclick="event.stopPropagation()" style="display: flex; flex-direction: column; align-items: stretch; gap: 12px; width: 250px;">
+    <span onclick="hideBottomPopup()" style="align-self: flex-end;">❌</span>
+    <h3 style="text-align: center;">🔗 Useful Tools</h3>
+    <button class="btn-list" onclick="window.open('https://infotechlifafa.com/lifafa/num.php', '_blank')">💼 Infotech</button>
+    <button class="btn-save" onclick="window.open('https://snapwallet.in/view-number-tools', '_blank')">💰 Snapwallet</button>
+    <button class="btn-mono" onclick="window.open('https://fastxlifafa.in/lifafa/numberarea.php', '_blank')">🚀 FastXl</button>
+  </div>
+</div>
+
+<!-- Tools Floating Button -->
+<div class="tools-btn">
+  <button onclick="showBottomPopup()">📂 Tools</button>
+</div>
+
+<div id="toast"></div>
+
+<!-- Your original JavaScript starts here -->
+
+<script>
+let userData = { date: '', list: [], original: '', nextIndex: 0 };
+
+function hideUserListPopup(e) {
+  if (!e || e.target.id === "userListPopup") {
+    document.getElementById("userListPopup").style.display = "none";
+  }
+}
+
+function showToast(msg, color = "#00c853", reload = false, withLoader = false) {
+  const toast = document.getElementById("toast");
+  toast.innerHTML = withLoader ? `<div>${msg}</div><div class="loader"></div>` : msg;
+  toast.style.background = color;
+  toast.style.display = "block";
+  setTimeout(() => {
+    toast.style.display = "none";
+    if (reload) location.reload();
+  }, withLoader ? 2000 : 1500);
+}
+
+function toggleSection(mode) {
+  // Hide all sections
+  document.getElementById("codeSection").style.display = "none";
+  document.getElementById("outputSection").style.display = "none";
+  document.getElementById("monoInput").style.display = "none";
+  document.getElementById("monoRunBtn").style.display = "none";
+  document.getElementById("monoResult").style.display = "none";
+  document.getElementById("copyMono").style.display = "none";
+  document.getElementById("historyOutput").style.display = "none";
+  document.getElementById("listPopup").style.display = "none";
+  document.getElementById("userListPopup").style.display = "none";
+
+  // Show relevant section
+  if (mode === "home") {
+    document.getElementById("codeSection").style.display = "flex";
+    document.getElementById("outputSection").style.display = "block";
+  } else if (mode === "mono") {
+    document.getElementById("monoInput").style.display = "block";
+    document.getElementById("monoRunBtn").style.display = "inline-block";
+  } else if (mode === "history") {
+    showHistory();
+    document.getElementById("historyOutput").style.display = "block";
+  } else if (mode === "list") {
+    document.getElementById("listPopup").style.display = "flex";
+  }
+}
+
+function submitListPopup() {
+  const date = document.getElementById("popupDateInput").value.trim();
+  const listText = document.getElementById("popupListInput").value.trim();
+  const lines = listText.split("\n");
+  if (!date || lines.length === 0) return showToast("❌ Date ya List missing!", "#ff1744");
+
+  let cleaned = [];
+  for (let line of lines) {
+    line = line.trim();
+    if (!line) continue;
+    let parts = line.split(/\s+/);
+    let serial = parseInt(parts[0]);
+    if (!isNaN(serial)) {
+      if (line.toLowerCase().includes("del")) {
+        cleaned.push({ serial, value: "deleted" });
+      } else {
+        cleaned.push({ serial, value: parts[parts.length - 1] });
+      }
+    }
+  }
+
+  userData = {
+    date,
+    list: cleaned,
+    original: listText,
+    nextIndex: 0
+  };
+  localStorage.setItem("amit_user_data", JSON.stringify(userData));
+  showToast("✅ List saved!", "#00c853", true, true);
+  document.getElementById("listPopup").style.display = "none";
+}
+
+function insertCode() {
+  const code = document.getElementById("codeInput").value.trim();
+  const number = document.getElementById("numberInput").value.trim();
+  if (!code || !number || (code.length !== 8 && code.length !== 9) || isNaN(number)) {
+    showToast("❌ Format: ABC123456 + 2300", "#ff1744");
+    return;
+  }
+
+  for (let i = userData.nextIndex; i < userData.list.length; i++) {
+    let item = userData.list[i];
+    if (item.value !== "deleted" && !item.value.includes(" ")) {
+      item.value = `${code}   ${number}   ${item.value}`;
+      userData.nextIndex = i + 1;
+      localStorage.setItem("amit_user_data", JSON.stringify(userData));
+      showToast(`✅ Code saved!`, "#00c853", true, true);
+      showList();
+      return;
+    }
+  }
+  showToast("⚠️ No space left to insert.", "#ff9100");
+}
+
+function showList() {
+  const saved = localStorage.getItem("amit_user_data");
+  const resultEl = document.getElementById("result");
+  if (!saved) {
+    resultEl.innerText = "No data.";
+    return;
+  }
+  const data = JSON.parse(saved);
+  let output = `**${data.date}**\n\n****\n\n`;
+  for (let item of data.list) {
+    let val = item.value.replace(/\b([A-Za-z0-9]{8,9})\b/g, "`$1`");
+    output += `${item.serial}.   ${val}\n\n`;
+  }
+  resultEl.innerText = output;
+  document.getElementById("copyBtn").style.display = "inline-block";
+}
+
+function copyResult() {
+  const text = document.getElementById("result").innerText;
+  navigator.clipboard.writeText(text).then(() => showToast("📋 Copied!", "#00c853"));
+}
+
+// Show the popup
+function showEditPopup() {
+  document.getElementById("editPopup").style.display = "flex";
+  document.getElementById("botInput").focus();
+}
+
+// Hide popup when clicking outside
+function hideEditPopup(e) {
+  if (!e || e.target.id === "editPopup") {
+    document.getElementById("editPopup").style.display = "none";
+  }
+}
+
+
+
+document.getElementById("codeEditInput").addEventListener("input", () => {
+  const val = document.getElementById("codeEditInput").value.trim();
+  if (val.length >= 8) {
+    document.getElementById("userInput").focus();
+  }
+});
+
+// Handle update on valid serial
+function submitEdit() {
+  const serial = parseInt(document.getElementById("botInput").value.trim());
+  const code = document.getElementById("codeEditInput").value.trim();
+  const user = document.getElementById("userInput").value.trim();
+
+  if (isNaN(serial) || !code || !user || (code.length !== 8 && code.length !== 9)) {
+    showToast("❌ Fill all fields correctly!", "#ff1744");
+    return;
+  }
+
+  const item = userData.list.find(x => x.serial === serial);
+  if (!item) {
+    showToast("❌ Serial not found!", "#ff1744");
+    return;
+  }
+
+  if (item.value === "deleted") {
+    showToast("⚠️ Cannot update deleted line!", "#ff9100");
+    return;
+  }
+
+  item.value = `${code}   ${user}`;
+  localStorage.setItem("amit_user_data", JSON.stringify(userData));
+  showToast("✅ Entry updated!", "#00c853", true, true);
+  showList();
+  document.getElementById("editPopup").style.display = "none";
+}
+
+function runMono() {
+  const lines = document.getElementById("monoInput").value.trim().split("\n");
+  let output = lines.map(line => line.trim()).filter(line => line).map(line => line.replace(/\b([A-Za-z0-9]{8,9})\b/, "`$1`")).join("\n\n");
+  document.getElementById("monoResult").innerText = output;
+  document.getElementById("monoResult").style.display = "block";
+  document.getElementById("copyMono").style.display = "inline-block";
+  showToast("✅ Converted to mono");
+}
+
+function copyMonoResult() {
+  const text = document.getElementById("monoResult").innerText;
+  navigator.clipboard.writeText(text).then(() => showToast("📋 Mono Copied!", "#00c853"));
+}
+
+function autoFocusNumber() {
+  const codeField = document.getElementById("codeInput");
+  const numberField = document.getElementById("numberInput");
+  if (codeField.value.trim().length >= 8) numberField.focus();
+}
+
+function saveUpdatedListToHistory() {
+  const saved = localStorage.getItem("amit_user_data");
+  if (!saved) return showToast("❌ No list to save!");
+  const data = JSON.parse(saved);
+  const output = document.getElementById("result").innerText.trim();
+  if (!output) return showToast("⚠️ Nothing to save.");
+  let history = JSON.parse(localStorage.getItem("amit_final_history") || "[]");
+  history.unshift({ date: data.date, output });
+  localStorage.setItem("amit_final_history", JSON.stringify(history));
+  showToast("✅ Saved to history!");
+}
+
+function showHistory() {
+  const container = document.getElementById("historyOutput");
+  let history = JSON.parse(localStorage.getItem("amit_final_history") || "[]");
+
+  if (!history.length) {
+    container.innerHTML = "📭 No saved history.";
+  } else {
+    container.innerHTML = `<h3 style="margin-bottom:15px;">📜 Saved Lists:</h3>` +
+      history.map((h, i) =>
+        `<div style="display: flex; align-items: center; gap: 15px; background: #000; padding: 10px 15px; border-radius: 8px; margin-bottom: 8px; justify-content: space-between; flex-wrap: wrap;">
+          <span style="font-weight: bold;">📅 ${h.date}</span>
+          <span style="display: flex; gap: 10px;">
+            <button onclick="navigator.clipboard.writeText(\`${h.output}\`).then(()=>showToast('📋 Copied!', '#00c853'))" class="btn-copy">📋</button>
+            <button onclick="deleteHistory(${i})" style="background:#d32f2f; color:#fff; border:none; padding:10px 15px; border-radius:8px;">❌</button>
+          </span>
+        </div>`
+      ).join("");
+  }
+
+  container.style.display = "block";
+}
+
+function deleteHistory(i) {
+  let history = JSON.parse(localStorage.getItem("amit_final_history") || "[]");
+  history.splice(i, 1);
+  localStorage.setItem("amit_final_history", JSON.stringify(history));
+  showToast("❌ Deleted!", "#d32f2f");
+  showHistory();
+}
+
+function showUserListPopup() {
+  const saved = localStorage.getItem("amit_user_data");
+  const box = document.getElementById("userListContent");
+  if (!saved) {
+    box.innerText = "❌ No list saved yet.";
+  } else {
+    const data = JSON.parse(saved);
+    box.innerText = data.original || "❌ Original list not found.";
+  }
+  document.getElementById("userListPopup").style.display = "flex";
+}
+
+function copyUserList() {
+  const text = document.getElementById("userListContent").innerText;
+  navigator.clipboard.writeText(text).then(() => showToast("📋 Userlist copied!", "#00c853"));
+}
+
+function showBottomPopup() {
+  document.getElementById('bottomLinkPopup').style.display = 'flex';
+}
+function hideBottomPopup(e) {
+  document.getElementById('bottomLinkPopup').style.display = 'none';
+}
+
+window.onload = () => {
+  const saved = localStorage.getItem("amit_user_data");
+  if (saved) {
+    userData = JSON.parse(saved);
+    showList();
+  }
+  toggleSection("home");
+};
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').then(function (registration) {
+      console.log('ServiceWorker registered: ', registration);
+    }).catch(function (error) {
+      console.log('ServiceWorker registration failed: ', error);
+    });
+  });
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').then(function (registration) {
+      console.log('ServiceWorker registered: ', registration);
+    }).catch(function (error) {
+      console.log('ServiceWorker registration failed: ', error);
+    });
+  });
+}
+function toggleDarkMode() {
+  document.body.classList.toggle("dark");
+  localStorage.setItem("amit_dark_mode", document.body.classList.contains("dark"));
+}
+
+// Load saved mode on page load
+window.addEventListener("DOMContentLoaded", () => {
+  if (localStorage.getItem("amit_dark_mode") === "true") {
+    document.body.classList.add("dark");
+  }
+});
+
+</script>
+</body>
+  </html>
+  
