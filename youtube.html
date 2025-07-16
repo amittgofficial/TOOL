@@ -25,13 +25,21 @@
     }
 
     .top-buttons button {
-      padding: 8px 16px;
-      font-size: 14px;
-      background-color: #444;
+      padding: 10px 20px;
+      font-size: 15px;
+      font-weight: bold;
+      background: linear-gradient(135deg, #cc0000, #ff4444);
       color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(255, 0, 0, 0.3);
       cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .top-buttons button:hover {
+      background: linear-gradient(135deg, #ff1a1a, #ff6666);
+      box-shadow: 0 6px 14px rgba(255, 50, 50, 0.5);
     }
 
     input {
@@ -113,7 +121,7 @@
     /* Toast */
     .toast {
       position: fixed;
-      top: 20px;
+      bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
       background-color: #1e90ff;
@@ -151,6 +159,7 @@
       border-radius: 12px;
       text-align: center;
       border: 1px solid #555;
+      max-width: 300px;
     }
 
     .modal button {
@@ -181,7 +190,7 @@
     <button onclick="confirmReset()">🔁 Reset All</button>
   </div>
 
-  <input type="text" id="numberInput" placeholder="Enter Number (e.g. 1, 2)">
+  <input type="tel" id="numberInput" placeholder="Enter Number (e.g. 1, 2)">
   <input type="text" id="linkInput" placeholder="Paste YouTube Link (e.g. https://youtu.be/abc123XYZ)">
   <button class="submit-btn" onclick="saveVideo()">Submit</button>
 
@@ -207,7 +216,6 @@
     async function saveVideo() {
       const number = document.getElementById("numberInput").value.trim();
       const link = document.getElementById("linkInput").value.trim();
-
       if (!number || !link) return alert("Please fill both fields!");
 
       const videoId = extractVideoID(link);
@@ -217,6 +225,7 @@
         stored.push({ number, link, error: true });
         localStorage.setItem("ytData", JSON.stringify(stored));
         renderVideos();
+        showToast("❌ Invalid video link saved");
         return;
       }
 
@@ -232,10 +241,12 @@
         });
         localStorage.setItem("ytData", JSON.stringify(stored));
         renderVideos();
+        showToast("✅ Video saved successfully");
       } catch (e) {
         stored.push({ number, link, error: true });
         localStorage.setItem("ytData", JSON.stringify(stored));
         renderVideos();
+        showToast("❌ Could not fetch video");
       }
 
       document.getElementById("numberInput").value = '';
@@ -295,8 +306,16 @@
       localStorage.removeItem("ytData");
       renderVideos();
       closeModal();
-      showToast("All saved data cleared ✅");
+      showToast("🗑️ All data cleared");
     }
+
+    // Close modal on outside click
+    window.addEventListener("click", function (e) {
+      const modal = document.getElementById("confirmModal");
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
 
     window.onload = renderVideos;
   </script>
