@@ -2,36 +2,51 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>YouTube Video Checker</title>
+  <title>YouTube Saver</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       background: #121212;
       color: #f1f1f1;
       font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      padding: 15px;
+      padding: 20px;
+      position: relative;
     }
 
     h2 {
       text-align: center;
-      margin-top: 10px;
+      margin-bottom: 10px;
     }
 
-    textarea {
+    .top-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .top-buttons button {
+      padding: 8px 16px;
+      font-size: 14px;
+      background-color: #444;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    input {
       width: 100%;
+      padding: 10px;
+      margin: 8px 0;
       font-size: 16px;
-      padding: 12px;
       border-radius: 10px;
       border: 1px solid #444;
       background: #1e1e1e;
-      color: #f1f1f1;
-      resize: vertical;
+      color: #fff;
       box-sizing: border-box;
-      height: 120px;
     }
 
-    button {
+    button.submit-btn {
       width: 100%;
       padding: 12px;
       font-size: 17px;
@@ -44,7 +59,7 @@
     }
 
     .result {
-      margin-top: 20px;
+      margin-top: 25px;
     }
 
     .video-block {
@@ -53,10 +68,10 @@
       background: #1e1e1e;
       border: 1px solid #333;
       border-left: 4px solid #cc0000;
-      border-radius: 10px;
-      padding: 10px;
-      margin-bottom: 12px;
-      box-shadow: 0 2px 6px rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      padding: 14px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
 
     .thumb {
@@ -73,52 +88,114 @@
     }
 
     .video-title {
+      font-size: 14px;
       font-weight: 500;
+    }
+
+    .channel-name {
+      color: #1e90ff;
       font-size: 13px;
-      line-height: 1.3em;
+      margin-top: 4px;
+    }
+
+    .video-number {
+      color: #f1c40f;
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 4px;
     }
 
     .not-found {
       color: #ff4c4c;
-      font-weight: 500;
-      font-size: 13px;
+      font-size: 14px;
     }
 
-    .video-serial {
-      color: #f1c40f;
-      font-weight: bold;
-      margin-right: 6px;
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #1e90ff;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+      z-index: 9999;
     }
 
-    a {
-      font-size: 12px;
-      color: #1e90ff;
-      text-decoration: none;
+    .toast.show {
+      opacity: 1;
+      pointer-events: auto;
     }
 
-    a:hover {
-      text-decoration: underline;
+    /* Confirm modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9998;
     }
 
-    @media (max-width: 480px) {
-      .thumb {
-        width: 90px;
-        height: 90px;
-      }
+    .modal {
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      border: 1px solid #555;
+    }
 
-      .video-title {
-        font-size: 12px;
-      }
+    .modal button {
+      margin: 10px 5px 0;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .btn-yes {
+      background-color: #cc0000;
+      color: white;
+      border: none;
+    }
+
+    .btn-no {
+      background-color: #444;
+      color: white;
+      border: none;
     }
   </style>
 </head>
 <body>
 
-  <h2>🎬 YouTube Video Checker</h2>
-  <textarea id="ytLinks" placeholder="1 https://youtu.be/BHSuKat96wI&#10;2 https://youtu.be/fakeid123"></textarea>
-  <button onclick="checkVideos()">Submit</button>
+  <h2>📥 YouTube Link Saver</h2>
+  <div class="top-buttons">
+    <button onclick="confirmReset()">🔁 Reset All</button>
+  </div>
+
+  <input type="text" id="numberInput" placeholder="Enter Number (e.g. 1, 2)">
+  <input type="text" id="linkInput" placeholder="Paste YouTube Link (e.g. https://youtu.be/abc123XYZ)">
+  <button class="submit-btn" onclick="saveVideo()">Submit</button>
 
   <div id="results" class="result"></div>
+
+  <div class="toast" id="toast">Reset completed ✅</div>
+
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal">
+      <p>Are you sure you want to clear all saved data?</p>
+      <button class="btn-yes" onclick="resetAll()">Yes</button>
+      <button class="btn-no" onclick="closeModal()">No</button>
+    </div>
+  </div>
 
   <script>
     function extractVideoID(url) {
@@ -127,65 +204,101 @@
       return match ? match[1] : null;
     }
 
-    async function checkVideos() {
-      const input = document.getElementById("ytLinks").value.trim();
-      const lines = input.split("\n");
-      const resultsDiv = document.getElementById("results");
-      resultsDiv.innerHTML = "";
+    async function saveVideo() {
+      const number = document.getElementById("numberInput").value.trim();
+      const link = document.getElementById("linkInput").value.trim();
 
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
+      if (!number || !link) return alert("Please fill both fields!");
 
-        let serial = "";
-        let url = line;
+      const videoId = extractVideoID(link);
+      const stored = JSON.parse(localStorage.getItem("ytData") || "[]");
 
-        const match = line.match(/^(\d+)\.?\s+(https?:\/\/[^\s]+)$/);
-        if (match) {
-          serial = match[1];
-          url = match[2];
-        } else {
-          serial = (i + 1).toString();
-        }
+      if (!videoId) {
+        stored.push({ number, link, error: true });
+        localStorage.setItem("ytData", JSON.stringify(stored));
+        renderVideos();
+        return;
+      }
 
-        const videoId = extractVideoID(url);
-        const block = document.createElement("div");
-        block.className = "video-block";
+      try {
+        const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+        const data = await res.json();
+        stored.push({
+          number,
+          link,
+          videoId,
+          title: data.title,
+          author: data.author_name
+        });
+        localStorage.setItem("ytData", JSON.stringify(stored));
+        renderVideos();
+      } catch (e) {
+        stored.push({ number, link, error: true });
+        localStorage.setItem("ytData", JSON.stringify(stored));
+        renderVideos();
+      }
 
-        if (!videoId) {
-          block.innerHTML = `
-            <div class="video-title">
-              <span class="video-serial">${serial}</span>
-              <span class="not-found">❌ Not Found</span><br>
-              <a href="${url}" target="_blank">${url}</a>
+      document.getElementById("numberInput").value = '';
+      document.getElementById("linkInput").value = '';
+    }
+
+    function renderVideos() {
+      const results = document.getElementById("results");
+      results.innerHTML = "";
+      const stored = JSON.parse(localStorage.getItem("ytData") || "[]");
+
+      stored.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "video-block";
+
+        if (item.error || !item.videoId) {
+          div.innerHTML = `
+            <div class="video-info">
+              <div class="video-number">${item.number}</div>
+              <div class="not-found">❌ Not Found</div>
+              <a href="${item.link}" target="_blank" style="color:#1e90ff; font-size:12px;">${item.link}</a>
             </div>
           `;
         } else {
-          try {
-            const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
-            const data = await res.json();
-            block.innerHTML = `
-              <img src="https://img.youtube.com/vi/${videoId}/hqdefault.jpg" class="thumb" onclick="window.open('https://youtu.be/${videoId}', '_blank')">
-              <div class="video-info">
-                <div class="video-title">
-                  <span class="video-serial">${serial}</span>${data.title}
-                </div>
-              </div>
-            `;
-          } catch (e) {
-            block.innerHTML = `
-              <div class="video-title">
-                <span class="video-serial">${serial}</span>
-                <span class="not-found">❌ Not Found</span><br>
-                <a href="${url}" target="_blank">${url}</a>
-              </div>
-            `;
-          }
+          div.innerHTML = `
+            <img src="https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg" class="thumb" onclick="window.open('https://youtu.be/${item.videoId}', '_blank')">
+            <div class="video-info">
+              <div class="video-number">${item.number}</div>
+              <div class="video-title">${item.title}</div>
+              <div class="channel-name">${item.author}</div>
+            </div>
+          `;
         }
 
-        resultsDiv.appendChild(block);
-      }
+        results.appendChild(div);
+      });
     }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 3000);
+    }
+
+    function confirmReset() {
+      document.getElementById("confirmModal").style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById("confirmModal").style.display = "none";
+    }
+
+    function resetAll() {
+      localStorage.removeItem("ytData");
+      renderVideos();
+      closeModal();
+      showToast("All saved data cleared ✅");
+    }
+
+    window.onload = renderVideos;
   </script>
 
 </body>
