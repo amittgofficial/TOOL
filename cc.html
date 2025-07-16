@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🧮 AmitXBhai Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #101010;
+      color: #fff;
+    }
+
+    .nav {
+      display: flex;
+      justify-content: space-around;
+      background: #151515;
+      padding: 15px 0;
+      border-bottom: 1px solid #222;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      flex-wrap: wrap;
+    }
+
+    .nav button {
+      background: linear-gradient(135deg, #0a84ff, #0061ff);
+      border: none;
+      color: white;
+      font-size: 1em;
+      font-weight: 600;
+      padding: 10px 20px;
+      border-radius: 12px;
+      margin: 5px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .nav button:hover {
+      background: linear-gradient(135deg, #2fafff, #007eff);
+      transform: scale(1.05);
+    }
+
+    .section {
+      display: none;
+      padding: 20px;
+      max-width: 600px;
+      margin: 20px auto;
+      background: #1a1a1a;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    textarea, input {
+      width: 100%;
+      font-size: 0.95em;
+      padding: 10px;
+      margin-top: 10px;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #222;
+      color: #fff;
+      resize: vertical;
+    }
+
+    textarea::placeholder, input::placeholder {
+      color: #888;
+      font-size: 0.9em;
+    }
+
+    textarea {
+      height: 150px;
+    }
+
+    button.action {
+      margin-top: 15px;
+      width: 100%;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      color: white;
+      font-size: 1em;
+      padding: 12px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      transition: all 0.3s ease;
+    }
+
+    button.action:hover {
+      background: linear-gradient(135deg, #1cb5e0, #000851);
+      transform: scale(1.03);
+    }
+
+    .output, .result-box {
+      margin-top: 20px;
+      background: #1c1c1c;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+      line-height: 1.6em;
+    }
+
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #000;
+      padding: 15px 25px;
+      color: #0f0;
+      border-radius: 12px;
+      z-index: 999;
+      display: none;
+      font-size: 1.1em;
+      text-align: center;
+      box-shadow: 0 0 12px rgba(0,255,0,0.2);
+    }
+
+    .history-entry {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 1px solid #333;
+    }
+
+    .history-entry span.date {
+      font-weight: bold;
+    }
+
+    .history-entry button {
+      background: none;
+      border: none;
+      color: #f55;
+      font-size: 1.2em;
+      cursor: pointer;
+    }
+
+    pre {
+      background: #111;
+      padding: 15px;
+      border-radius: 10px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      color: #0af;
+    }
+  </style>
+</head>
+<body>
+
+<div class="nav">
+  <button onclick="location.reload()">🏠 Home</button>
+  <button onclick="showSection('history')">📚 History</button>
+  <button onclick="showSection('manual')">➕ Add</button>
+  <button onclick="showSection('line')">📏 Line</button>
+  <button onclick="showSection('linkFormatter')">🔗 Link</button>
+  <button onclick="showSection('post')">📝 Post</button>
+  
+</div>
+
+<div id="home" class="section active">
+  <textarea id="listInput" placeholder="Paste your list..."></textarea>
+  <button class="action" onclick="calculate()">✅ Calculate</button>
+  <div class="output" id="liveOutput" style="display:none;">
+    <div>➕ Total: <b id="totalValue">0</b></div>
+    <div>📅 Date: <b id="dateValue">-</b></div>
+    <button class="action" style="background:#e74c3c;" onclick="resetTotal()">♻️ Reset</button>
+  </div>
+</div>
+
+<div id="history" class="section">
+  <h2>📚 History</h2>
+  <div id="historyList"></div>
+</div>
+
+<div id="manual" class="section">
+  <input id="manualTotal" type="number" placeholder="Enter total">
+  <input id="manualDate" type="text" placeholder="Enter date (e.g. 25 June)">
+  <button class="action" onclick="manualAdd()">✅ Submit</button>
+</div>
+
+<div id="line" class="section">
+  <textarea id="lineInput" placeholder="Paste full mixed list here..."></textarea>
+  <button class="action" onclick="countLines()">📏 Count Lines</button>
+  <div class="result-box" id="lineResult" style="display:none;"></div>
+  <div class="result-box" id="lineSummary" style="display:none; margin-top: 10px;">
+    <div id="lineDateText">📅 Date: -</div>
+    <div id="lineFreshText">🆕 Fresh Lines: 0</div>
+    <button class="action" onclick="addFromLineCount()">➕ Add to Total</button>
+  </div>
+</div>
+
+<div id="linkFormatter" class="section">
+  <h2>🔗 Link Formatter Tool</h2>
+  <textarea id="serials" placeholder="Paste full content with date + serial lines..."></textarea>
+  <textarea id="links" placeholder="Paste links (one per line, use 'deleted' where needed)..."></textarea>
+  <button class="action" onclick="adjustLinks()">✅ Submit</button>
+  <div class="output" id="outputSection" style="display:none;">
+    <h3>Formatted Output</h3>
+    <pre id="output"></pre>
+    <button class="action" onclick="copyOutput()">📋 Copy Output</button>
+  </div>
+</div>
+
+<div id="post" class="section">
+  <h2>📝 Create Post</h2>
+  <input id="codeAmount" placeholder="Code + Amount (e.g. ABC123456 5)" />
+  <input id="channel" placeholder="Channel Name" />
+  <input id="totalNum" placeholder="Total Number" />
+  <input id="postDate" placeholder="Date (e.g. 5-5-25)" />
+  <input id="userId" placeholder="User ID or Name" />
+  <button class="action" onclick="generatePost()">📤 Generate Post</button>
+  <div class="output" id="postOutput" style="display:none;">
+    <h3>🧾 Post Output</h3>
+    <pre id="postResult"></pre>
+    <button class="action" onclick="copyPost()">📋 Copy</button>
+  </div>
+</div>
+
+
+<div id="toast" class="toast">Copied!</div>
+
+<script>
+  let total = parseInt(localStorage.getItem('total') || 0);
+  let lastDate = localStorage.getItem('lastDate') || "-";
+  let history = JSON.parse(localStorage.getItem('history') || '{}');
+
+  function updateLive() {
+    document.getElementById('totalValue').innerText = total;
+    document.getElementById('dateValue').innerText = lastDate;
+    document.getElementById('liveOutput').style.display = total > 0 ? 'block' : 'none';
+  }
+
+  function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+
+  if (id === 'history') loadHistory();
+
+  if (id === 'line') {
+    // Clear old line data
+    document.getElementById("lineInput").value = "";
+    document.getElementById("lineResult").style.display = "none";
+    document.getElementById("lineSummary").style.display = "none";
+    document.getElementById("lineDateText").innerText = "📅 Date: -";
+    document.getElementById("lineFreshText").innerText = "🆕 Fresh Lines: 0";
+  }
+}
+
+  function showToast(msg, color = "#0f0") {
+    const toast = document.getElementById('toast');
+    toast.innerText = msg;
+    toast.style.color = color;
+    toast.style.display = 'block';
+    setTimeout(() => toast.style.display = 'none', 2500);
+  }
+
+  function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  }
+
+  function calculate() {
+    const text = document.getElementById("listInput").value.trim();
+    const lines = text.split('\n');
+    let sum = 0, foundDate = "";
+
+    lines.forEach(line => {
+      const parts = line.trim().split(/\s+/);
+      const dateRegex = /^(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)$/i;
+      const dateMatch = line.trim().match(dateRegex);
+      if (dateMatch) {
+        foundDate = `${dateMatch[1]} ${capitalize(dateMatch[2])}`;
+      }
+      if (parts.length >= 3) {
+        const val = parseInt(parts[2]);
+        if (!isNaN(val)) sum += val;
+      }
+    });
+
+    if (sum > 0 && foundDate) {
+      total += sum;
+      lastDate = foundDate;
+      history[foundDate] = (history[foundDate] || 0) + sum;
+      localStorage.setItem('total', total);
+      localStorage.setItem('lastDate', lastDate);
+      localStorage.setItem('history', JSON.stringify(history));
+      document.getElementById('listInput').value = "";
+      updateLive();
+      showToast(`✅ ${sum} added for ${foundDate}`);
+    } else if (sum === 0) {
+      showToast("❌ No valid 3rd column numbers found.", "#f33");
+    } else if (!foundDate) {
+      showToast("❌ Date missing. Please add line like '26 June'", "#f33");
+    } else {
+      showToast("❌ Invalid input.", "#f33");
+    }
+  }
+
+  function resetTotal() {
+    if (confirm("Reset only total & date? History will remain.")) {
+      total = 0;
+      lastDate = "-";
+      localStorage.setItem('total', "0");
+      localStorage.setItem('lastDate', "-");
+      updateLive();
+      showToast("🔄 Total reset!");
+    }
+  }
+
+  function loadHistory() {
+    const histBox = document.getElementById("historyList");
+    histBox.innerHTML = "";
+    const sorted = Object.entries(history).sort();
+    sorted.forEach(([date, val]) => {
+      const div = document.createElement("div");
+      div.className = "history-entry";
+      div.innerHTML = `<span class="date">${date} — ${val}</span>
+                       <button onclick="confirmDelete('${date}')">❌</button>`;
+      histBox.appendChild(div);
+    });
+  }
+
+  function confirmDelete(date) {
+    if (confirm(`Delete entry for ${date}?`)) {
+      delete history[date];
+      localStorage.setItem("history", JSON.stringify(history));
+      loadHistory();
+      showToast(`🗑️ Deleted ${date}`, "#f33");
+    }
+  }
+
+  function manualAdd() {
+    const val = parseInt(document.getElementById('manualTotal').value);
+    const date = document.getElementById('manualDate').value.trim();
+    if (!isNaN(val) && date) {
+      total += val;
+      lastDate = date;
+      history[date] = (history[date] || 0) + val;
+      localStorage.setItem('total', total);
+      localStorage.setItem('lastDate', lastDate);
+      localStorage.setItem('history', JSON.stringify(history));
+      updateLive();
+      showToast(`🖐️ Manually added ${val} for ${date}`);
+      document.getElementById('manualTotal').value = "";
+      document.getElementById('manualDate').value = "";
+      showSection('home');
+    } else {
+      showToast('❌ Fill total & date!', "#f33");
+    }
+  }
+
+  
+  function countLines() {
+    const input = document.getElementById("lineInput").value.trim();
+    const lines = input.split('\n').filter(l => l.trim().length > 0);
+
+    let totalLines = 0;
+    let deleted = 0;
+    let fresh = 0;
+    let foundDate = "";
+
+    lines.forEach(line => {
+      const clean = line.trim().toLowerCase();
+      const dateRegex = /^(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)$/i;
+      const dateMatch = line.trim().match(dateRegex);
+      if (dateMatch) {
+        foundDate = `${dateMatch[1]} ${capitalize(dateMatch[2])}`;
+      }
+      if (/^\d+\.\s+deleted$/.test(clean)) {
+        deleted++;
+        totalLines++;
+      } else if (/^\d+\.\s+[a-z0-9]{4,}\s+\d+\s+\d+$/i.test(clean)) {
+        fresh++;
+        totalLines++;
+      } else if (/^\d+\.\s+[a-z0-9]{4,}\s+\d+$/i.test(clean)) {
+        fresh++;
+        totalLines++;
+      }
+    });
+
+    document.getElementById("lineResult").innerText = `Total Lines: ${totalLines}\nDeleted: ${deleted}\nFresh: ${fresh}`;
+    document.getElementById("lineResult").style.display = "block";
+
+    if (fresh > 0 && foundDate) {
+      document.getElementById("lineDateText").innerText = `📅 Date: ${foundDate}`;
+      document.getElementById("lineFreshText").innerText = `🆕 Fresh Lines: ${fresh}`;
+      document.getElementById("lineSummary").style.display = "block";
+      window.lineFreshCount = fresh;
+      window.lineFoundDate = foundDate;
+    } else {
+      document.getElementById("lineSummary").style.display = "none";
+    }
+  }
+  
+  
+  
+  function adjustLinks() {
+    const serialInput = document.getElementById("serials").value.trim().split("\n").filter(Boolean);
+    const links = document.getElementById("links").value.trim().split("\n").filter(Boolean);
+
+    let output = "";
+    let linkIndex = 0;
+    let startProcessing = false;
+
+    for (let i = 0; i < serialInput.length; i++) {
+      const line = serialInput[i].trim();
+
+      if (!startProcessing) {
+        output += line + "\n\n";
+        if (line.startsWith("****")) startProcessing = true;
+        continue;
+      }
+
+      const firstColMatch = line.match(/^(\d+\.)/);
+      if (firstColMatch) {
+        const serial = firstColMatch[1];
+        let link = links[linkIndex] ? links[linkIndex].trim() : "";
+        while (link === "") {
+          linkIndex++;
+          link = links[linkIndex] ? links[linkIndex].trim() : "";
+        }
+
+        const formattedLink = link.toLowerCase().includes("delete") ? "`deleted`" : "`" + link + "`";
+        output += `${serial} ${formattedLink}\n\n`;
+        linkIndex++;
+      }
+    }
+
+    document.getElementById("output").innerText = output.trim();
+    document.getElementById("outputSection").style.display = "block";
+    document.getElementById("outputSection").scrollIntoView({ behavior: "smooth" });
+    showToast("Formatted Successfully ✅");
+  }
+
+  function copyOutput() {
+    const text = document.getElementById("output").innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      showToast("Copied to Clipboard 📋");
+    });
+  }
+  
+  
+
+  function showToast(msg, color = "#0f0") {
+    const toast = document.getElementById('toast');
+    toast.innerText = msg;
+    toast.style.color = color;
+    toast.style.display = 'block';
+    setTimeout(() => toast.style.display = 'none', 2500);
+  }
+
+  function generatePost() {
+    const codeAmt = document.getElementById('codeAmount').value.trim();
+    const channel = document.getElementById('channel').value.trim();
+    const total = document.getElementById('totalNum').value.trim();
+    const date = document.getElementById('postDate').value.trim();
+    const uid = document.getElementById('userId').value.trim();
+
+    if (!codeAmt || !channel || !total || !date || !uid) {
+      showToast("❌ All 5 fields are required!", "#f33");
+      return;
+    }
+
+    const match = codeAmt.match(/^(\w+)\s+(\d+)$/);
+    if (!match) {
+      showToast("❌ First line must be like 'ABC123456 5'", "#f33");
+      return;
+    }
+
+    const [_, codeRaw, amount] = match;
+    const code = (codeRaw.length === 8 || codeRaw.length === 9) ? `\`${codeRaw}\`` : codeRaw;
+    const formattedCode = `${code} {${amount}}`;
+
+    const output = `𝗡𝗨𝗠𝗕𝗘R:-  ${formattedCode}
+
+𝗖𝗛𝗔𝗡𝗡𝗘𝗟 𝗡AME--  ${channel} ✅
+
+𝗧𝗢𝗧𝗔𝗟 N𝗨𝗠𝗕𝗘𝗥 :-  ${total} ✅
+
+𝗗𝗔𝗧𝗘 :- ${date} ✅
+
+𝗣𝗘𝗡𝗗𝗜𝗡𝗚 𝗣𝗔𝗬𝗠𝗘𝗡𝗧:-
+
+ID:- ${uid} ✅`;
+
+    document.getElementById("postResult").innerText = output;
+    document.getElementById("postOutput").style.display = "block";
+    document.getElementById("postOutput").scrollIntoView({ behavior: "smooth" });
+    showToast("Post Ready ✅");
+  }
+
+  function copyPost() {
+    const text = document.getElementById("postResult").innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      showToast("Copied to Clipboard 📋");
+    });
+  }
+function addFromLineCount() {
+  const fresh = window.lineFreshCount || 0;
+  const date = window.lineFoundDate || "";
+
+  if (fresh > 0 && date) {
+    total += fresh;
+    lastDate = date;
+    history[date] = (history[date] || 0) + fresh;
+    localStorage.setItem('total', total);
+    localStorage.setItem('lastDate', lastDate);
+    localStorage.setItem('history', JSON.stringify(history));
+    updateLive();
+    showToast(`✅ ${fresh} added for ${date}`);
+    showSection('home'); // Redirect to Home
+  } else {
+    showToast("❌ Cannot add. Missing date or fresh count.", "#f33");
+  }
+}
+  updateLive();
+</script>
+</body>
+</html>
