@@ -1,181 +1,148 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
   <title>AmitTG</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    * { box-sizing: border-box; }
     body {
-      margin: 0;
       font-family: 'Segoe UI', sans-serif;
-      background: #121212;
-      color: #fff;
-      padding: 20px;
+      margin: 0; padding: 0;
+      background: #111;
+      color: #f5f5f5;
+    }
+    header {
+      background: #222; padding: 1rem;
+      text-align: center; font-size: 1.8rem;
+      font-weight: bold;
+      border-bottom: 2px solid #333;
     }
     .container {
-      max-width: 500px;
-      margin: auto;
-    }
-    .title {
-      font-size: 24px;
-      margin-bottom: 10px;
-      text-align: center;
-      font-weight: bold;
-    }
-    .placeholder-box {
-      border: 2px solid #555;
-      border-radius: 8px;
-      padding: 12px;
-      background: #1f1f1f;
+      padding: 1rem;
     }
     textarea {
+      width: 100%; height: 150px;
+      border-radius: 12px;
+      padding: 1rem;
+      background: #1b1b1b;
+      color: #fff;
+      font-size: 1rem;
+      resize: vertical;
+      border: 2px solid #444;
+    }
+    .btn {
+      padding: 0.6rem 1rem;
+      margin-top: 1rem;
       width: 100%;
-      min-height: 180px;
-      background: transparent;
+      background: #4CAF50;
       border: none;
-      color: #fff;
-      resize: none;
-      outline: none;
-      font-size: 16px;
-    }
-    button {
-      width: 48%;
-      margin-top: 10px;
-      padding: 10px;
-      background: #00adb5;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       font-weight: bold;
+      color: white;
+      font-size: 1.1rem;
       cursor: pointer;
-      transition: 0.3s;
-    }
-    button:hover {
-      background: #03c4cc;
     }
     .history {
-      margin-top: 20px;
+      margin-top: 2rem;
     }
-    .history h3 {
-      margin: 0 0 10px;
-    }
-    .entry {
-      background: #1f1f1f;
-      border: 1px solid #333;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 8px;
+    .history-item {
+      background: #222;
+      padding: 0.6rem;
+      margin: 0.3rem 0;
+      border-radius: 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    .popup {
+    .history-item span {
+      font-size: 0.95rem;
+    }
+    .history-item button {
+      margin-left: 5px;
+      font-size: 0.8rem;
+      background: #444;
+      color: white;
+      border: none;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .toast {
       position: fixed;
-      top: 20px;
+      bottom: 10px;
       left: 50%;
       transform: translateX(-50%);
-      background: #00adb5;
-      padding: 12px 20px;
+      background: #333;
       color: white;
+      padding: 0.7rem 1.2rem;
       border-radius: 8px;
-      animation: fade 2s forwards;
+      display: none;
+      animation: fade 2s ease-in-out;
     }
     @keyframes fade {
-      0% { opacity: 1; }
-      100% { opacity: 0; top: 0; }
+      0% { opacity: 0; bottom: 0px; }
+      20% { opacity: 1; bottom: 20px; }
+      80% { opacity: 1; }
+      100% { opacity: 0; bottom: 0px; }
     }
   </style>
 </head>
 <body>
+  <header>AmitTG</header>
   <div class="container">
-    <div class="title">AmitTG</div>
-    <div class="placeholder-box">
-      <textarea id="numberInput" placeholder="Paste numbers line by line..."></textarea>
-    </div>
-    <div style="display: flex; justify-content: space-between;">
-      <button onclick="cleanNumbers()">Filter</button>
-      <button onclick="resetInput()">Clear</button>
-    </div>
+    <textarea id="input" placeholder="Paste numbers (comma or newline)..."></textarea>
+    <button class="btn" onclick="filterNumbers()">Filter</button>
 
-    <div class="history" id="history"></div>
+    <div class="history" id="historyList"></div>
   </div>
 
+  <div class="toast" id="toast">Saved successfully!</div>
+
   <script>
-    function resetInput() {
-      document.getElementById('numberInput').value = '';
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.innerText = msg;
+      toast.style.display = "block";
+      setTimeout(() => toast.style.display = "none", 2500);
     }
 
-    function cleanNumbers() {
-      const input = document.getElementById('numberInput').value.trim().split('\n');
-      const cleaned = [];
-      const duplicate = [];
-      const invalid = [];
-
-      const seen = new Set();
-
-      for (let num of input) {
-        num = num.trim();
-        if (/^\d{7,15}$/.test(num)) {
-          if (!seen.has(num)) {
-            seen.add(num);
-            cleaned.push(num);
-          } else {
-            duplicate.push(num);
-          }
-        } else if (num) {
-          invalid.push(num);
-        }
-      }
-
-      localStorage.setItem('cleaned', JSON.stringify(cleaned));
-      localStorage.setItem('duplicate', JSON.stringify(duplicate));
-      localStorage.setItem('invalid', JSON.stringify(invalid));
-
-      window.location.href = 'result.html';
+    function filterNumbers() {
+      const raw = document.getElementById("input").value;
+      const numbers = raw.split(/[\n,]+/).map(n => n.trim()).filter(Boolean);
+      const unique = [...new Set(numbers)];
+      const duplicate = numbers.filter((n, i, a) => a.indexOf(n) !== i && a.lastIndexOf(n) === i);
+      localStorage.setItem("fresh", unique.join("\n"));
+      localStorage.setItem("duplicate", [...new Set(duplicate)].join("\n"));
+      location.href = "result.html";
     }
 
     function loadHistory() {
-      const historyDiv = document.getElementById('history');
-      const saved = JSON.parse(localStorage.getItem('history') || '[]');
-      if (!saved.length) return;
-
-      const title = document.createElement('h3');
-      title.textContent = 'History';
-      historyDiv.appendChild(title);
-
-      saved.reverse().forEach((item, index) => {
-        const div = document.createElement('div');
-        div.className = 'entry';
-        div.innerHTML = `
-          <div><strong>${item.name}</strong><br><small>${item.date}</small></div>
+      const history = JSON.parse(localStorage.getItem("savedHistory") || "[]");
+      const div = document.getElementById("historyList");
+      div.innerHTML = `<h3>History</h3>`;
+      history.reverse().forEach(item => {
+        const el = document.createElement("div");
+        el.className = "history-item";
+        el.innerHTML = `<span>${item.name} (${item.date})</span>
           <div>
-            <button onclick="copyData(${saved.length - 1 - index})">Copy</button>
-            <button onclick="deleteData(${saved.length - 1 - index})">Del</button>
-          </div>
-        `;
-        historyDiv.appendChild(div);
+            <button onclick="copyData('${item.data.replace(/\n/g, '\\n')}')">Copy</button>
+            <button onclick="deleteItem('${item.date}')">Delete</button>
+          </div>`;
+        div.appendChild(el);
       });
     }
 
-    function copyData(index) {
-      const saved = JSON.parse(localStorage.getItem('history') || '[]');
-      navigator.clipboard.writeText(saved[index].data.join(','));
-      showPopup('Copied');
+    function copyData(data) {
+      navigator.clipboard.writeText(data.replace(/\\n/g, "\n"));
+      showToast("Copied!");
     }
 
-    function deleteData(index) {
-      let saved = JSON.parse(localStorage.getItem('history') || '[]');
-      saved.splice(index, 1);
-      localStorage.setItem('history', JSON.stringify(saved));
-      location.reload();
-    }
-
-    function showPopup(msg) {
-      const popup = document.createElement('div');
-      popup.className = 'popup';
-      popup.innerText = msg;
-      document.body.appendChild(popup);
-      setTimeout(() => popup.remove(), 2000);
+    function deleteItem(date) {
+      let history = JSON.parse(localStorage.getItem("savedHistory") || "[]");
+      history = history.filter(i => i.date !== date);
+      localStorage.setItem("savedHistory", JSON.stringify(history));
+      loadHistory();
     }
 
     loadHistory();
