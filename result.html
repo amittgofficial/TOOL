@@ -1,124 +1,101 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Results - AmitTG</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Result</title>
   <style>
     body {
-      background: #1e1e1e;
+      margin: 0;
+      padding: 1rem;
+      background: #121212;
       color: white;
       font-family: sans-serif;
-      padding: 20px;
     }
-
-    h2 {
-      color: #7b1fa2;
-    }
-
-    .section {
-      margin-bottom: 25px;
-    }
-
-    .pill {
-      display: inline-block;
-      margin: 5px;
-      padding: 8px 12px;
-      border-radius: 16px;
-      background: #ffebee;
-      color: #c62828;
-      font-weight: bold;
-    }
-
-    .number-line {
-      background: #2c2c2c;
-      padding: 8px;
-      border-radius: 6px;
-      margin: 4px 0;
+    textarea {
+      width: 100%;
+      height: 100px;
       font-size: 16px;
-    }
-
-    .title {
-      font-weight: bold;
-      font-size: 18px;
-      color: #26a69a;
-      margin-bottom: 10px;
-    }
-
-    .list-box {
-      max-height: 250px;
-      overflow-y: auto;
-      background: #2b2b2b;
       padding: 10px;
-      border-radius: 10px;
+      box-sizing: border-box;
+      resize: vertical;
+      overflow-y: auto;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px;
+      font-size: 16px;
+      background: #1f1f1f;
+      color: white;
+      border: none;
+      border-radius: 8px;
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 6px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .show {
+      opacity: 1;
     }
   </style>
 </head>
 <body>
+  <h3>Fresh (<span id="totalCount">0</span>)</h3>
+  <textarea id="cleaned" readonly></textarea><br>
+  <button onclick="copyCleaned()">Copy</button>
+  <button onclick="saveData()">Save</button>
 
-  <h2>📊 Cleaned Result</h2>
+  <h3>Duplicate (<span id="dupCount">0</span>)</h3>
+  <textarea id="dupes" readonly></textarea>
 
-  <div class="section">
-    <div class="title">✅ Cleaned Numbers</div>
-    <div id="cleaned" class="list-box"></div>
-  </div>
-
-  <div class="section">
-    <div class="title">❌ Duplicate Numbers</div>
-    <div id="dupes" class="list-box"></div>
-  </div>
-
-  <div class="section">
-    <div class="title">🚫 Invalid Numbers</div>
-    <div id="invalid" class="list-box"></div>
-  </div>
+  <div class="toast" id="toast">Saved!</div>
 
   <script>
-    const raw = localStorage.getItem("number_data") || "";
-    const lines = raw.trim().split("\n");
-    const numbers = lines.join("\n").split(/[\s,]+/);
+    const raw = localStorage.getItem("rawInput") || "";
+    const all = raw.split(/\n|,/).map(v => v.trim()).filter(Boolean);
+    const valid = all.filter(v => /^[0-9]+$/.test(v));
+    const clean = [...new Set(valid)];
+    const duplicates = valid.filter((v, i, arr) => arr.indexOf(v) !== i && arr.lastIndexOf(v) === i);
+    const invalid = all.filter(v => !/^[0-9]+$/.test(v));
 
-    const seen = new Set();
-    const dupes = new Set();
-    const invalid = [];
-    const cleaned = [];
+    document.getElementById("cleaned").value = clean.join("\n");
+    document.getElementById("dupes").value = [...new Set([...duplicates, ...invalid])].join("\n");
+    document.getElementById("totalCount").innerText = clean.length;
+    document.getElementById("dupCount").innerText = duplicates.length + invalid.length;
 
-    for (let num of numbers) {
-      num = num.replace(/\D/g, "");
-      if (num.length === 10) {
-        if (seen.has(num)) {
-          dupes.add(num);
-        } else {
-          seen.add(num);
-          cleaned.push(num);
-        }
-      } else if (num.length > 0) {
-        invalid.push(num);
-      }
+    function copyCleaned() {
+      navigator.clipboard.writeText(clean.join(","));
+      showToast("Copied!");
     }
 
-    // Render Cleaned
-    const cleanedDiv = document.getElementById("cleaned");
-    cleaned.forEach((n, i) => {
-      const div = document.createElement("div");
-      div.className = "number-line";
-      div.textContent = `${i + 1}. ${n}`;
-      cleanedDiv.appendChild(div);
-    });
+    function saveData() {
+      const name = prompt("Enter name");
+      if (!name) return;
 
-    // Render Duplicates
-    const dupDiv = document.getElementById("dupes");
-    Array.from(dupes).forEach(n => {
-      const pill = document.createElement("div");
-      pill.className = "pill";
-      pill.textContent = n;
-      dupDiv.appendChild(pill);
-    });
+      const date = prompt("Enter date (1-31 Jan-Dec)");
+      if (!date) return;
 
-    // Render Invalid
-    const invDiv = document.getElementById("invalid");
-    invDiv.textContent = invalid.join(", ");
+      const item = { name, date, data: clean };
+      const saved = JSON.parse(localStorage.getItem("history") || "[]");
+      saved.push(item);
+      localStorage.setItem("history", JSON.stringify(saved));
+      showToast("Saved!");
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.innerText = msg;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2000);
+    }
   </script>
-
 </body>
 </html>
