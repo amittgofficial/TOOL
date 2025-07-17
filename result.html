@@ -7,94 +7,110 @@
   <style>
     body {
       margin: 0;
-      padding: 1rem;
-      background: #121212;
-      color: white;
-      font-family: sans-serif;
+      background: #111;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+    }
+    .section {
+      margin-bottom: 30px;
+    }
+    .section h2 {
+      margin-bottom: 5px;
     }
     textarea {
       width: 100%;
-      height: 100px;
-      font-size: 16px;
-      padding: 10px;
-      box-sizing: border-box;
+      height: 120px;
       resize: vertical;
-      overflow-y: auto;
+      padding: 10px;
+      background: #1f1f1f;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      overflow: auto;
     }
     button {
-      margin-top: 10px;
       padding: 10px;
-      font-size: 16px;
-      background: #1f1f1f;
-      color: white;
+      margin-right: 10px;
       border: none;
-      border-radius: 8px;
+      background: #00adb5;
+      color: white;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
     }
-    .toast {
+    .popup {
       position: fixed;
-      bottom: 20px;
+      top: 20px;
       left: 50%;
       transform: translateX(-50%);
-      background: #333;
-      color: #fff;
-      padding: 10px 20px;
-      border-radius: 6px;
-      opacity: 0;
-      transition: opacity 0.3s ease;
+      background: #00adb5;
+      padding: 12px 20px;
+      color: white;
+      border-radius: 8px;
+      animation: fade 2s forwards;
     }
-    .show {
-      opacity: 1;
+    @keyframes fade {
+      0% { opacity: 1; }
+      100% { opacity: 0; top: 0; }
     }
   </style>
 </head>
 <body>
-  <h3>Fresh (<span id="totalCount">0</span>)</h3>
-  <textarea id="cleaned" readonly></textarea><br>
-  <button onclick="copyCleaned()">Copy</button>
-  <button onclick="saveData()">Save</button>
+  <div class="section">
+    <h2>Fresh (<span id="cleanCount">0</span>)</h2>
+    <textarea id="cleaned" readonly></textarea>
+    <br>
+    <button onclick="copyCleaned()">Copy</button>
+    <button onclick="saveCleaned()">Save</button>
+  </div>
 
-  <h3>Duplicate (<span id="dupCount">0</span>)</h3>
-  <textarea id="dupes" readonly></textarea>
+  <div class="section">
+    <h2>Duplicate (<span id="dupCount">0</span>)</h2>
+    <textarea id="duplicate" readonly></textarea>
+  </div>
 
-  <div class="toast" id="toast">Saved!</div>
+  <div class="section">
+    <h2>Invalid</h2>
+    <textarea id="invalid" readonly></textarea>
+  </div>
 
   <script>
-    const raw = localStorage.getItem("rawInput") || "";
-    const all = raw.split(/\n|,/).map(v => v.trim()).filter(Boolean);
-    const valid = all.filter(v => /^[0-9]+$/.test(v));
-    const clean = [...new Set(valid)];
-    const duplicates = valid.filter((v, i, arr) => arr.indexOf(v) !== i && arr.lastIndexOf(v) === i);
-    const invalid = all.filter(v => !/^[0-9]+$/.test(v));
+    const cleaned = JSON.parse(localStorage.getItem('cleaned') || '[]');
+    const duplicate = JSON.parse(localStorage.getItem('duplicate') || '[]');
+    const invalid = JSON.parse(localStorage.getItem('invalid') || '[]');
 
-    document.getElementById("cleaned").value = clean.join("\n");
-    document.getElementById("dupes").value = [...new Set([...duplicates, ...invalid])].join("\n");
-    document.getElementById("totalCount").innerText = clean.length;
-    document.getElementById("dupCount").innerText = duplicates.length + invalid.length;
+    document.getElementById('cleaned').value = cleaned.join('\n');
+    document.getElementById('duplicate').value = duplicate.join('\n');
+    document.getElementById('invalid').value = invalid.join('\n');
+
+    document.getElementById('cleanCount').textContent = cleaned.length;
+    document.getElementById('dupCount').textContent = duplicate.length;
 
     function copyCleaned() {
-      navigator.clipboard.writeText(clean.join(","));
-      showToast("Copied!");
+      navigator.clipboard.writeText(cleaned.join(','));
+      showPopup('Cleaned numbers copied');
     }
 
-    function saveData() {
-      const name = prompt("Enter name");
+    function saveCleaned() {
+      const name = prompt("Enter name for saving:", "My Numbers");
       if (!name) return;
+      const now = new Date();
+      const date = now.getDate().toString().padStart(2, '0') + '-' + now.toLocaleString('default', { month: 'short' });
 
-      const date = prompt("Enter date (1-31 Jan-Dec)");
-      if (!date) return;
-
-      const item = { name, date, data: clean };
-      const saved = JSON.parse(localStorage.getItem("history") || "[]");
-      saved.push(item);
-      localStorage.setItem("history", JSON.stringify(saved));
-      showToast("Saved!");
+      let saved = JSON.parse(localStorage.getItem('history') || '[]');
+      saved.push({ name, date, data: cleaned });
+      localStorage.setItem('history', JSON.stringify(saved));
+      showPopup('Saved');
+      setTimeout(() => location.href = 'index.html', 800);
     }
 
-    function showToast(msg) {
-      const toast = document.getElementById("toast");
-      toast.innerText = msg;
-      toast.classList.add("show");
-      setTimeout(() => toast.classList.remove("show"), 2000);
+    function showPopup(msg) {
+      const popup = document.createElement('div');
+      popup.className = 'popup';
+      popup.innerText = msg;
+      document.body.appendChild(popup);
+      setTimeout(() => popup.remove(), 2000);
     }
   </script>
 </body>
