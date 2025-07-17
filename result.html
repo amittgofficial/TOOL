@@ -1,116 +1,111 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Result</title>
+  <meta charset="UTF-8">
+  <title>Filter Result</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      margin: 0;
-      background: #111;
+      background: #121212;
       color: #fff;
       font-family: 'Segoe UI', sans-serif;
-      padding: 20px;
+      margin: 0;
+      padding: 1rem;
     }
-    .section {
-      margin-bottom: 30px;
-    }
-    .section h2 {
-      margin-bottom: 5px;
-    }
+    h2 { margin-bottom: 0.3rem; }
     textarea {
-      width: 100%;
-      height: 120px;
+      width: 100%; height: 140px;
+      background: #1c1c1c;
+      color: #f5f5f5;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+      border: 1px solid #444;
       resize: vertical;
-      padding: 10px;
-      background: #1f1f1f;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      overflow: auto;
     }
-    button {
-      padding: 10px;
-      margin-right: 10px;
-      border: none;
-      background: #00adb5;
+    .btn {
+      padding: 0.6rem 1rem;
+      background: #2196F3;
       color: white;
-      border-radius: 6px;
+      border: none;
       font-weight: bold;
+      border-radius: 10px;
+      width: 100%;
+      margin-top: 10px;
       cursor: pointer;
     }
-    .popup {
+    .btn-secondary {
+      background: #4CAF50;
+      margin-top: 0.5rem;
+    }
+    .toast {
       position: fixed;
-      top: 20px;
+      bottom: 10px;
       left: 50%;
       transform: translateX(-50%);
-      background: #00adb5;
-      padding: 12px 20px;
+      background: #333;
       color: white;
+      padding: 0.7rem 1.2rem;
       border-radius: 8px;
-      animation: fade 2s forwards;
+      display: none;
+      animation: fade 2s ease-in-out;
     }
     @keyframes fade {
-      0% { opacity: 1; }
-      100% { opacity: 0; top: 0; }
+      0% { opacity: 0; bottom: 0px; }
+      20% { opacity: 1; bottom: 20px; }
+      80% { opacity: 1; }
+      100% { opacity: 0; bottom: 0px; }
     }
   </style>
 </head>
 <body>
-  <div class="section">
-    <h2>Fresh (<span id="cleanCount">0</span>)</h2>
-    <textarea id="cleaned" readonly></textarea>
-    <br>
-    <button onclick="copyCleaned()">Copy</button>
-    <button onclick="saveCleaned()">Save</button>
-  </div>
+  <h2>Fresh (<span id="freshCount">0</span>)</h2>
+  <textarea id="freshArea" readonly></textarea>
+  <button class="btn" onclick="copyFresh()">Copy Fresh</button>
 
-  <div class="section">
-    <h2>Duplicate (<span id="dupCount">0</span>)</h2>
-    <textarea id="duplicate" readonly></textarea>
-  </div>
+  <h2>Duplicate (<span id="dupCount">0</span>)</h2>
+  <textarea id="dupArea" readonly></textarea>
 
-  <div class="section">
-    <h2>Invalid</h2>
-    <textarea id="invalid" readonly></textarea>
-  </div>
+  <button class="btn btn-secondary" onclick="saveData()">Save</button>
+
+  <div class="toast" id="toast">Saved successfully!</div>
 
   <script>
-    const cleaned = JSON.parse(localStorage.getItem('cleaned') || '[]');
-    const duplicate = JSON.parse(localStorage.getItem('duplicate') || '[]');
-    const invalid = JSON.parse(localStorage.getItem('invalid') || '[]');
+    const fresh = localStorage.getItem("fresh") || "";
+    const duplicate = localStorage.getItem("duplicate") || "";
 
-    document.getElementById('cleaned').value = cleaned.join('\n');
-    document.getElementById('duplicate').value = duplicate.join('\n');
-    document.getElementById('invalid').value = invalid.join('\n');
+    document.getElementById("freshArea").value = fresh;
+    document.getElementById("dupArea").value = duplicate;
+    document.getElementById("freshCount").innerText = fresh.split("\n").filter(Boolean).length;
+    document.getElementById("dupCount").innerText = duplicate.split("\n").filter(Boolean).length;
 
-    document.getElementById('cleanCount').textContent = cleaned.length;
-    document.getElementById('dupCount').textContent = duplicate.length;
-
-    function copyCleaned() {
-      navigator.clipboard.writeText(cleaned.join(','));
-      showPopup('Cleaned numbers copied');
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.innerText = msg;
+      toast.style.display = "block";
+      setTimeout(() => toast.style.display = "none", 2500);
     }
 
-    function saveCleaned() {
-      const name = prompt("Enter name for saving:", "My Numbers");
-      if (!name) return;
-      const now = new Date();
-      const date = now.getDate().toString().padStart(2, '0') + '-' + now.toLocaleString('default', { month: 'short' });
-
-      let saved = JSON.parse(localStorage.getItem('history') || '[]');
-      saved.push({ name, date, data: cleaned });
-      localStorage.setItem('history', JSON.stringify(saved));
-      showPopup('Saved');
-      setTimeout(() => location.href = 'index.html', 800);
+    function copyFresh() {
+      navigator.clipboard.writeText(document.getElementById("freshArea").value.replace(/\n/g, ","));
+      showToast("Fresh copied!");
     }
 
-    function showPopup(msg) {
-      const popup = document.createElement('div');
-      popup.className = 'popup';
-      popup.innerText = msg;
-      document.body.appendChild(popup);
-      setTimeout(() => popup.remove(), 2000);
+    function saveData() {
+      const name = prompt("Enter name:");
+      const date = prompt("Enter date (e.g., 17 July):");
+      if (!name || !date) return showToast("Name and Date required!");
+
+      const history = JSON.parse(localStorage.getItem("savedHistory") || "[]");
+      history.push({
+        name: name.trim(),
+        date: date.trim(),
+        data: document.getElementById("freshArea").value
+      });
+      localStorage.setItem("savedHistory", JSON.stringify(history));
+      showToast("Saved!");
+      setTimeout(() => location.href = "index.html", 1000);
     }
   </script>
 </body>
